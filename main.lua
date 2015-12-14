@@ -48,24 +48,17 @@ for i,j in pairs(config) do
 end
 
 -- Build model and train it
-m = Word2Vec(config)
-m:build_vocab(config.corpus)
-m:build_table()
+local model = Word2Vec(config)
+model:build_vocab(config.corpus)
+model:build_table()
 
 for k = 1, config.epochs do
-    m.lr = config.lr -- reset learning rate at each epoch
-    m:train_stream(config.corpus)
+    model.lr = config.lr -- reset learning rate at each epoch
+    model:train_stream(config.corpus)
 end
 
-
-local sampler = Word2VecSampler{
-  word_vecs = m.word_vecs,
-  word2index = m.c.word2index,
-  index2word = m.c.index2word
-}
-
 -- print similar words
-function print_sim_words(model, words, k)
+function print_sim_words(sampler, words, k)
   for i = 1, #words do
     r = sampler:similar(words[i], k)
 
@@ -79,7 +72,12 @@ function print_sim_words(model, words, k)
   end
 end
 
-
-print_sim_words(m, {"in","the","one"},5)
+local sampler = Word2VecSampler{
+  word_vecs = m.word_vecs,
+  word2index = m.c.word2index,
+  index2word = m.c.index2word
+}
 
 sampler:save("sampler.t7")
+
+print("Done.")
