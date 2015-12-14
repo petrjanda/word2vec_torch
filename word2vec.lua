@@ -26,7 +26,6 @@ function Word2Vec:__init(config)
   self.contexts = torch.IntTensor(1 + self.neg_samples) 
   self.labels = torch.zeros(1 + self.neg_samples)
   self.labels[1] = 1 -- first label is always pos sample
-  self.total_count = 0
 
   self.c = Corpus()
 end
@@ -63,10 +62,10 @@ function Word2Vec:build_vocab(corpus)
   self.c:buildIndices()
 
   local vocab_size = self.c.vocab_size 
-  n = self.c.lines
-  self.total_count = self.c.total
+  local lines = self.c.lines
+  local total_count = self.c.total
 
-  print(string.format("%d words and %d sentences processed in %.2f seconds.", self.total_count, n, sys.clock() - start))
+  print(string.format("%d words and %d sentences processed in %.2f seconds.", total_count, lines, sys.clock() - start))
   print(string.format("Vocab size after eliminating words occuring less than %d times: %d", self.minfreq, vocab_size))
 
   -- initialize word/context embeddings now that vocab size is known
@@ -80,13 +79,7 @@ function Word2Vec:build_vocab(corpus)
   self.w2v:add(nn.MM(false, true)) -- dot prod and sigmoid to get probabilities
   self.w2v:add(nn.Sigmoid())
 
-  self.decay = (self.min_lr-self.lr)/(self.total_count)
-
-  print("min: ", self.min_lr)
-  print("lr: ", self.lr)
-  print("total_count: ", self.total_count)
-  print("window: ", self.window)
-  print("decay: ", self.decay)
+  self.decay = (self.min_lr-self.lr)/(total_count)
 end
 
 -- Build a table of unigram frequencies from which to obtain negative samples
@@ -135,24 +128,28 @@ function Word2Vec:train_stream(corpus)
       word_idx = self.c:getIndex(word)
       if word_idx ~= nil then -- word exists in vocab
         local reduced_window = torch.random(self.window) -- pick random window size
-        self.word[1] = word_idx -- update current word
 
+        self.word[1] = word_idx -- update current word
         self.lr = math.max(self.min_lr, self.lr + self.decay) 
 
         for j = i - reduced_window, i + reduced_window do -- loop through contexts
           local context = sentence[j]
+
           if context ~= nil and j ~= i then -- possible context
             context_idx = self.c:getIndex(context)
+
             if context_idx ~= nil then -- valid context
               self:sample_contexts(context_idx) -- update pos/neg contexts
               self:train_pair(self.word, self.contexts) -- train word context pair
+
               c = c + 1
+
               if c % 1000 ==0 then
                 print(string.format("%d words trained in %.2f seconds. Learning rate: %.4f", c, sys.clock() - start, self.lr))
               end
             end
           end
-        end		
+        end
       end
     end
   end
