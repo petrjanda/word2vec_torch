@@ -16,7 +16,6 @@ function Word2Vec:__init(config, corpus)
   self.window = config.window
   self.lr = config.lr
   self.min_lr = config.min_lr
-  self.alpha = config.alpha
   self.table_size = config.table_size
 
   self.tensortype = torch.getdefaulttensortype()
@@ -29,6 +28,11 @@ function Word2Vec:__init(config, corpus)
   self.c = corpus
 
   self:build_model()
+
+  local start = sys.clock()
+  print("Building a table of unigram frequencies... ")
+  self.table = corpus:buildUnigramsTable(config.alpha, self.table_size)
+  print(string.format("Done in %.2f seconds.", sys.clock() - start))
 end
 
 function Word2Vec:save(path)
@@ -75,13 +79,6 @@ function Word2Vec:build_model()
   self.decay = (self.min_lr-self.lr)/(total_count)
 end
 
--- Build a table of unigram frequencies from which to obtain negative samples
-function Word2Vec:build_table()
-  local start = sys.clock()
-  print("Building a table of unigram frequencies... ")
-  self.table = self.c:buildUnigramsTable(self.alpha, self.table_size)
-  print(string.format("Done in %.2f seconds.", sys.clock() - start))
-end
 
 -- Train on word context pairs
 function Word2Vec:train_pair(word, contexts)
