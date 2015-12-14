@@ -58,4 +58,3 @@ end
 m:print_sim_words({"the","he","can"},5)
 
 m:save("model.t7")
-

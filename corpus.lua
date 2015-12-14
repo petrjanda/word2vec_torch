@@ -1,5 +1,3 @@
-local Corpus = torch.class("Corpus")
-
 -- Split the text by the given separator
 local function split(input, sep)
   if sep == nil then
@@ -17,6 +15,8 @@ local function split(input, sep)
   return t
 end
 
+-- Corpus class for loading text files as the NLP tasks
+local Corpus = torch.class("Corpus")
 
 function Corpus:__init()
   self.total = 0
@@ -33,7 +33,7 @@ function Corpus:read(path)
   for line in f:lines() do
     for _, word in ipairs(split(line)) do
       if self.vocab[word] == nil then
-        self.vocab[word] = 1	 
+        self.vocab[word] = 1
       else
         self.vocab[word] = self.vocab[word] + 1
       end
@@ -47,6 +47,7 @@ function Corpus:read(path)
   f:close()
 end
 
+-- Stream corpus sentenses (lines split by space)
 function Corpus:streamSentenses(path, fn)
   local f = io.open(path, "r")
 
@@ -59,6 +60,7 @@ function Corpus:streamSentenses(path, fn)
   f:close()
 end
 
+-- Filter words which occur with some minimal frequency
 function Corpus:filter(minfreq)
   for word, count in pairs(self.vocab) do
     if count < minfreq then

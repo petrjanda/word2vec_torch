@@ -105,6 +105,7 @@ function Word2Vec:train_pair(word, contexts)
   local p = self.w2v:forward({contexts, word})
   local loss = self.criterion:forward(p, self.labels)
   local dl_dp = self.criterion:backward(p, self.labels)
+
   self.w2v:zeroGradParameters()
   self.w2v:backward({contexts, word}, dl_dp)
   self.w2v:updateParameters(self.lr)
@@ -114,8 +115,10 @@ end
 function Word2Vec:sample_contexts(context)
   self.contexts[1] = context
   local i = 0
+
   while i < self.neg_samples do
     neg_context = self.table[torch.random(self.table_size)]
+
     if context ~= neg_context then
       self.contexts[i+2] = neg_context
       i = i + 1
