@@ -43,6 +43,7 @@ for param, value in pairs(params) do
     config[param] = value
 end
 
+-- Print config
 for i,j in pairs(config) do
     print(i..": ", j)
 end
@@ -62,32 +63,20 @@ print(string.format("Vocab size after eliminating words occuring less than %d ti
 -- Build model
 local model = Word2Vec(config, c)
 
+-- Training
 for k = 1, config.epochs do
     model.lr = config.lr -- reset learning rate at each epoch
     model:train_stream(config.corpus)
 end
 
--- print similar words
-function print_sim_words(sampler, words, k)
-  for i = 1, #words do
-    r = sampler:similar(words[i], k)
-
-    if r ~= nil then
-      print("-------"..words[i].."-------")
-
-      for j = 1, k do
-        print(string.format("%s, %.4f", r[j][1], r[j][2]))
-      end
-    end
-  end
-end
-
+-- Create sampler from the model
 local sampler = Word2VecSampler{
   word_vecs = m.word_vecs,
   word2index = m.c.word2index,
   index2word = m.c.index2word
 }
 
+-- Save sampler to the file
 sampler:save("sampler.t7")
 
 print("Done.")
