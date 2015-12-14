@@ -21,6 +21,9 @@ function Corpus:__init()
   self.total = 0
   self.lines = 0
   self.vocab = {}
+
+  self.index2word = {}
+  self.word2index = {}
 end
 
 function Corpus:read(path)
@@ -44,6 +47,16 @@ function Corpus:read(path)
 end
 
 function Corpus:filter(minfreq)
+  for word, count in pairs(self.vocab) do
+    if count < minfreq then
+      self.vocab[word] = nil
+    end
+  end
 end
 
-
+function Corpus:buildIndices()
+  for word, count in pairs(self.vocab) do
+    self.index2word[#self.index2word + 1] = word
+    self.word2index[word] = #self.index2word
+  end
+end

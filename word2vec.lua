@@ -58,24 +58,19 @@ function Word2Vec:build_vocab(corpus)
   local start = sys.clock()
   local c = Corpus()
   c:read(corpus)
-
+  c:filter(self.minfreq)
+  c:buildIndices()
 
   self.vocab = c.vocab
+  self.index2word = c.index2word
+  self.word2index = c.word2index
   n = c.lines
   self.total_count = c.total
-
-  -- Delete words that do not meet the minfreq threshold and create word indices
-  for word, count in pairs(self.vocab) do
-    if count >= self.minfreq then
-      self.index2word[#self.index2word+1] = word
-      self.word2index[word] = #self.index2word	    
-    else
-      self.vocab[word] = nil
-    end
-  end
   self.vocab_size = #self.index2word
+
   print(string.format("%d words and %d sentences processed in %.2f seconds.", self.total_count, n, sys.clock() - start))
   print(string.format("Vocab size after eliminating words occuring less than %d times: %d", self.minfreq, self.vocab_size))
+
   -- initialize word/context embeddings now that vocab size is known
   self.word_vecs = nn.LookupTable(self.vocab_size, self.dim) -- word embeddings
   self.context_vecs = nn.LookupTable(self.vocab_size, self.dim) -- context embeddings
