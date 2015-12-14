@@ -62,13 +62,15 @@ end
 function Word2Vec:build_model()
   print("Building model...")
   local vocab_size = self.c.vocab_size 
-  local lines = self.c.lines
   local total_count = self.c.total
 
   -- initialize word/context embeddings now that vocab size is known
   self.word_vecs = nn.LookupTable(vocab_size, self.dim) -- word embeddings
+  self.word_vecs:reset(0.25)
+
   self.context_vecs = nn.LookupTable(vocab_size, self.dim) -- context embeddings
-  self.word_vecs:reset(0.25); self.context_vecs:reset(0.25) -- rescale N(0,1)
+  self.context_vecs:reset(0.25) -- rescale N(0,1)
+
   self.w2v = nn.Sequential()
   self.w2v:add(nn.ParallelTable())
   self.w2v.modules[1]:add(self.context_vecs)
@@ -89,6 +91,8 @@ function Word2Vec:train_pair(word, contexts)
   self.w2v:zeroGradParameters()
   self.w2v:backward({contexts, word}, dl_dp)
   self.w2v:updateParameters(self.lr)
+
+  return loss, dl_dp
 end
 
 -- Sample negative contexts
@@ -112,8 +116,10 @@ function Word2Vec:train_stream(corpus)
   print("Training...")
   local start = sys.clock()
   local c = 0
+  local totalLoss = 0
 
   function process(sentense, progress)
+
     for i, word in ipairs(sentence) do
       word_idx = self.c:getIndex(word)
       if word_idx ~= nil then -- word exists in vocab
@@ -130,12 +136,15 @@ function Word2Vec:train_stream(corpus)
 
             if context_idx ~= nil then -- valid context
               self:sample_contexts(context_idx) -- update pos/neg contexts
-              self:train_pair(self.word, self.contexts) -- train word context pair
+              local loss, _ = self:train_pair(self.word, self.contexts) -- train word context pair
 
               c = c + 1
+              totalLoss = totalLoss + loss
+
 
               if c % 1000 ==0 then
-                print(progress * 100, string.format("%d words trained in %.2f seconds. Learning rate: %.4f", c, sys.clock() - start, self.lr))
+                print(progress * 100, totalLoss, string.format("%d words trained in %.2f seconds. Learning rate: %.4f", c, sys.clock() - start, self.lr))
+                totalLoss = 0
               end
             end
           end
