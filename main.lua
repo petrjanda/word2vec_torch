@@ -57,7 +57,11 @@ for k = 1, config.epochs do
 end
 
 
-local sampler = Word2VecSampler(m)
+local sampler = Word2VecSampler{
+  word_vecs = m.word_vecs,
+  word2index = m.c.word2index,
+  index2word = m.c.index2word
+}
 
 -- print similar words
 function print_sim_words(model, words, k)

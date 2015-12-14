@@ -132,7 +132,7 @@ function Word2Vec:train_stream(corpus)
 
   function process(sentense)
     for i, word in ipairs(sentence) do
-      word_idx = self.c.getIndex(word)
+      word_idx = self.c:getIndex(word)
       if word_idx ~= nil then -- word exists in vocab
         local reduced_window = torch.random(self.window) -- pick random window size
         self.word[1] = word_idx -- update current word
@@ -142,7 +142,7 @@ function Word2Vec:train_stream(corpus)
         for j = i - reduced_window, i + reduced_window do -- loop through contexts
           local context = sentence[j]
           if context ~= nil and j ~= i then -- possible context
-            context_idx = self.c.getIndex(context)
+            context_idx = self.c:getIndex(context)
             if context_idx ~= nil then -- valid context
               self:sample_contexts(context_idx) -- update pos/neg contexts
               self:train_pair(self.word, self.contexts) -- train word context pair
