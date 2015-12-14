@@ -47,8 +47,20 @@ for i,j in pairs(config) do
     print(i..": ", j)
 end
 
--- Build model and train it
-local model = Word2Vec(config)
+-- Load corpus 
+print("Building vocabulary...")
+local start = sys.clock()
+
+local c = Corpus()
+c:read(config.corpus)
+c:filter(config.minfreq)
+c:buildIndices()
+
+print(string.format("%d words and %d sentences processed in %.2f seconds.", c.total, c.lines, sys.clock() - start))
+print(string.format("Vocab size after eliminating words occuring less than %d times: %d", config.minfreq, c.vocab_size))
+
+-- Build model
+local model = Word2Vec(config, c)
 model:build_vocab(config.corpus)
 model:build_table()
 

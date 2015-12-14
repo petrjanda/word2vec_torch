@@ -8,7 +8,7 @@ require("corpus")
 
 local Word2Vec = torch.class("Word2Vec")
 
-function Word2Vec:__init(config)
+function Word2Vec:__init(config, corpus)
   self.gpu = config.gpu -- 1 if train on gpu, otherwise cpu
   self.stream = config.stream -- 1 if stream from hard drive, 0 otherwise
   self.neg_samples = config.neg_samples
@@ -27,7 +27,7 @@ function Word2Vec:__init(config)
   self.labels = torch.zeros(1 + self.neg_samples)
   self.labels[1] = 1 -- first label is always pos sample
 
-  self.c = Corpus()
+  self.c = corpus
 end
 
 function Word2Vec:save(path)
@@ -55,18 +55,10 @@ end
 
 -- Build vocab
 function Word2Vec:build_vocab(corpus)
-  print("Building vocabulary...")
-  local start = sys.clock()
-  self.c:read(corpus)
-  self.c:filter(self.minfreq)
-  self.c:buildIndices()
-
+  print("Building model...")
   local vocab_size = self.c.vocab_size 
   local lines = self.c.lines
   local total_count = self.c.total
-
-  print(string.format("%d words and %d sentences processed in %.2f seconds.", total_count, lines, sys.clock() - start))
-  print(string.format("Vocab size after eliminating words occuring less than %d times: %d", self.minfreq, vocab_size))
 
   -- initialize word/context embeddings now that vocab size is known
   self.word_vecs = nn.LookupTable(vocab_size, self.dim) -- word embeddings
