@@ -44,9 +44,10 @@ for param, value in pairs(params) do
 end
 
 for i,j in pairs(config) do
-    print(i..": "..j)
+    print(i..": ", j)
 end
 
+-- Build model and train it
 m = Word2Vec(config)
 m:build_vocab(config.corpus)
 m:build_table()
