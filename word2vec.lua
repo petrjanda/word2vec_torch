@@ -113,7 +113,7 @@ function Word2Vec:train_stream(corpus)
   local start = sys.clock()
   local c = 0
 
-  function process(sentense)
+  function process(sentense, progress)
     for i, word in ipairs(sentence) do
       word_idx = self.c:getIndex(word)
       if word_idx ~= nil then -- word exists in vocab
@@ -135,7 +135,7 @@ function Word2Vec:train_stream(corpus)
               c = c + 1
 
               if c % 1000 ==0 then
-                print(string.format("%d words trained in %.2f seconds. Learning rate: %.4f", c, sys.clock() - start, self.lr))
+                print(progress * 100, string.format("%d words trained in %.2f seconds. Learning rate: %.4f", c, sys.clock() - start, self.lr))
               end
             end
           end

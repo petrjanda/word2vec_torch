@@ -55,11 +55,14 @@ end
 -- Stream corpus sentenses (lines split by space)
 function Corpus:streamSentenses(path, fn)
   local f = io.open(path, "r")
+  local i = 1
 
   for line in f:lines() do
     sentence = split(line)
 
-    fn(sentence)
+    fn(sentence, i / self.lines)
+
+    i = i + 1
   end
 
   f:close()

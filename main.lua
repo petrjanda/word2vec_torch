@@ -69,9 +69,9 @@ end
 
 -- Create sampler from the model
 local sampler = Word2VecSampler{
-  word_vecs = m.word_vecs,
-  word2index = m.c.word2index,
-  index2word = m.c.index2word
+  word_vecs = model.word_vecs,
+  word2index = model.c.word2index,
+  index2word = model.c.index2word
 }
 
 -- Save sampler to the file
