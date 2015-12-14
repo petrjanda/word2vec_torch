@@ -1,4 +1,3 @@
-require('nn')
 require('sampler')
 
 local snap = Word2VecSampler.load("sampler.t7")

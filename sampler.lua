@@ -1,3 +1,5 @@
+require('nn')
+
 -- Row-normalize a matrix
 local function normalize(m)
   m_norm = torch.zeros(m:size())
