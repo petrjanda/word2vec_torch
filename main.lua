@@ -7,6 +7,7 @@ require("os")
 require("paths")
 require("torch")
 dofile("word2vec.lua")
+require("sampler.lua")
 
 -- Default configuration
 config = {}
@@ -45,16 +46,35 @@ end
 for i,j in pairs(config) do
     print(i..": "..j)
 end
--- Train model
+
 m = Word2Vec(config)
 m:build_vocab(config.corpus)
 m:build_table()
 
 for k = 1, config.epochs do
     m.lr = config.lr -- reset learning rate at each epoch
-    m:train_model(config.corpus)
+    m:train_stream(config.corpus)
 end
 
-m:print_sim_words({"the","he","can"},5)
 
-m:save("model.t7")
+local sampler = Word2VecSampler(m)
+
+-- print similar words
+function print_sim_words(model, words, k)
+  for i = 1, #words do
+    r = sampler:similar(words[i], k)
+
+    if r ~= nil then
+      print("-------"..words[i].."-------")
+
+      for j = 1, k do
+        print(string.format("%s, %.4f", r[j][1], r[j][2]))
+      end
+    end
+  end
+end
+
+
+print_sim_words(m, {"in","the","one"},5)
+
+sampler:save("sampler.t7")

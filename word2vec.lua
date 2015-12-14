@@ -7,6 +7,9 @@ require("nn")
 require("corpus")
 
 
+
+
+
 local Word2Vec = torch.class("Word2Vec")
 
 function Word2Vec:__init(config)
@@ -35,9 +38,13 @@ function Word2Vec:__init(config)
 end
 
 function Word2Vec:save(path)
-  local snap = {}
+  local snap = self
 
   torch.save(path, snap)
+end
+
+function Word2Vec.load(path)
+  return torch.load(path)
 end
 
 -- move to cuda
@@ -160,72 +167,4 @@ function Word2Vec:train_stream(corpus)
   end
 
   self.c:streamSentenses(corpus, process)
-end
-
--- Row-normalize a matrix
-function Word2Vec:normalize(m)
-  m_norm = torch.zeros(m:size())
-  for i = 1, m:size(1) do
-    m_norm[i] = m[i] / torch.norm(m[i])
-  end
-  return m_norm
-end
-
--- Return the k-nearest words to a word or a vector based on cosine similarity
--- w can be a string such as "king" or a vector for ("king" - "queen" + "man")
-function Word2Vec:get_sim_words(w, k)
-  if self.word_vecs_norm == nil then
-    self.word_vecs_norm = self:normalize(self.word_vecs.weight:double())
-  end
-
-  if type(w) == "string" then
-    if self.word2index[w] == nil then
-      print("'"..w.."' does not exist in vocabulary.")
-      return nil
-    else
-      w = self.word_vecs_norm[self.word2index[w]]
-    end
-  end
-
-  local sim = torch.mv(self.word_vecs_norm, w)
-  sim, idx = torch.sort(-sim)
-  local r = {}
-
-  for i = 1, k do
-    r[i] = {self.index2word[idx[i]], -sim[i]}
-  end
-
-  return r
-end
-
--- print similar words
-function Word2Vec:print_sim_words(words, k)
-  for i = 1, #words do
-    r = self:get_sim_words(words[i], k)
-
-    if r ~= nil then
-      print("-------"..words[i].."-------")
-
-      for j = 1, k do
-        print(string.format("%s, %.4f", r[j][1], r[j][2]))
-      end
-    end
-  end
-end
-
--- split on separator
-function Word2Vec:split(input, sep)
-  if sep == nil then
-    sep = "%s"
-  end
-  local t = {}; local i = 1
-  for str in string.gmatch(input, "([^"..sep.."]+)") do
-    t[i] = str; i = i + 1
-  end
-  return t
-end
-
--- train the model using config parameters
-function Word2Vec:train_model(corpus)
-  self:train_stream(corpus)
 end
