@@ -15,15 +15,15 @@ function Word2Vec:__init(config)
   self.neg_samples = config.neg_samples
   self.minfreq = config.minfreq
   self.dim = config.dim
-  self.window = config.window 
-  self.lr = config.lr 
+  self.window = config.window
+  self.lr = config.lr
   self.min_lr = config.min_lr
   self.alpha = config.alpha
-  self.table_size = config.table_size 
+  self.table_size = config.table_size
 
   self.tensortype = torch.getdefaulttensortype()
   self.criterion = nn.BCECriterion() -- logistic loss
-  self.word = torch.IntTensor(1) 
+  self.word = torch.IntTensor(1)
   self.contexts = torch.IntTensor(1 + self.neg_samples) 
   self.labels = torch.zeros(1 + self.neg_samples)
   self.labels[1] = 1 -- first label is always pos sample
@@ -31,12 +31,14 @@ function Word2Vec:__init(config)
   self.index2word = {}
   self.word2index = {}
   self.total_count = 0
+
+  self.c = Corpus()
 end
 
 function Word2Vec:save(path)
   local snap = {}
 
-  torch.save(snap, path)
+  torch.save(path, snap)
 end
 
 -- move to cuda
@@ -56,7 +58,6 @@ end
 function Word2Vec:build_vocab(corpus)
   print("Building vocabulary...")
   local start = sys.clock()
-  self.c = Corpus()
   self.c:read(corpus)
   self.c:filter(self.minfreq)
   self.c:buildIndices()
@@ -81,7 +82,14 @@ function Word2Vec:build_vocab(corpus)
   self.w2v.modules[1]:add(self.word_vecs)
   self.w2v:add(nn.MM(false, true)) -- dot prod and sigmoid to get probabilities
   self.w2v:add(nn.Sigmoid())
-  self.decay = (self.min_lr-self.lr)/(self.total_count*self.window)
+  self.decay = (self.min_lr-self.lr)/(self.total_count)--*self.window)
+
+
+  print("min: ", self.min_lr)
+  print("lr: ", self.lr)
+  print("total_count: ", self.total_count)
+  print("window: ", self.window)
+  print("decay: ", self.decay)
 end
 
 -- Build a table of unigram frequencies from which to obtain negative samples
@@ -121,14 +129,16 @@ function Word2Vec:train_stream(corpus)
   print("Training...")
   local start = sys.clock()
   local c = 0
-  f = io.open(corpus, "r")
-  for line in f:lines() do
-    sentence = self:split(line)
+
+  function process(sentense)
     for i, word in ipairs(sentence) do
       word_idx = self.word2index[word]
       if word_idx ~= nil then -- word exists in vocab
         local reduced_window = torch.random(self.window) -- pick random window size
         self.word[1] = word_idx -- update current word
+
+        self.lr = math.max(self.min_lr, self.lr + self.decay) 
+
         for j = i - reduced_window, i + reduced_window do -- loop through contexts
           local context = sentence[j]
           if context ~= nil and j ~= i then -- possible context
@@ -137,8 +147,7 @@ function Word2Vec:train_stream(corpus)
               self:sample_contexts(context_idx) -- update pos/neg contexts
               self:train_pair(self.word, self.contexts) -- train word context pair
               c = c + 1
-              self.lr = math.max(self.min_lr, self.lr + self.decay) 
-              if c % 100000 ==0 then
+              if c % 1000 ==0 then
                 print(string.format("%d words trained in %.2f seconds. Learning rate: %.4f", c, sys.clock() - start, self.lr))
               end
             end
@@ -147,6 +156,8 @@ function Word2Vec:train_stream(corpus)
       end
     end
   end
+
+  self.c:streamSentenses(corpus, process)
 end
 
 -- Row-normalize a matrix
@@ -268,7 +279,7 @@ function Word2Vec:train_model(corpus)
     self:cuda()
   end
   -- if self.stream==1 then
-    self:train_stream(corpus)
+  self:train_stream(corpus)
   -- else
   --   self:preload_data(corpus)
   --   self:train_mem()

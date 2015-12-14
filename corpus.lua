@@ -1,5 +1,6 @@
 local Corpus = torch.class("Corpus")
 
+-- Split the text by the given separator
 local function split(input, sep)
   if sep == nil then
     sep = "%s"
@@ -46,6 +47,18 @@ function Corpus:read(path)
   f:close()
 end
 
+function Corpus:streamSentenses(path, fn)
+  local f = io.open(path, "r")
+
+  for line in f:lines() do
+    sentence = split(line)
+
+    fn(sentence)
+  end
+
+  f:close()
+end
+
 function Corpus:filter(minfreq)
   for word, count in pairs(self.vocab) do
     if count < minfreq then
@@ -69,16 +82,21 @@ function Corpus:buildUnigramsTable(alpha, tableSize)
     total_count_pow = total_count_pow + count^alpha
   end   
 
-  local table = torch.IntTensor(tableSize)
+  local t = torch.IntTensor(tableSize)
   local word_index = 1
+
+  -- probability of the word in the corpus
   local word_prob = self.vocab[self.index2word[word_index]]^alpha / total_count_pow
 
   for idx = 1, tableSize do
-    table[idx] = word_index
+    t[idx] = word_index
 
     if idx / tableSize > word_prob then
       word_index = word_index + 1
-      word_prob = word_prob + self.vocab[self.index2word[word_index]]^alpha / total_count_pow
+
+      if(word_index <= vocab_size) then
+        word_prob = word_prob + self.vocab[self.index2word[word_index]] ^ alpha / total_count_pow
+      end
     end
 
     if word_index > vocab_size then
@@ -86,5 +104,5 @@ function Corpus:buildUnigramsTable(alpha, tableSize)
     end
   end
 
-  return table
+  return t
 end
