@@ -61,7 +61,6 @@ print(string.format("Vocab size after eliminating words occuring less than %d ti
 
 -- Build model
 local model = Word2Vec(config, c)
-model:build_vocab(config.corpus)
 model:build_table()
 
 for k = 1, config.epochs do

@@ -12,7 +12,6 @@ function Word2Vec:__init(config, corpus)
   self.gpu = config.gpu -- 1 if train on gpu, otherwise cpu
   self.stream = config.stream -- 1 if stream from hard drive, 0 otherwise
   self.neg_samples = config.neg_samples
-  self.minfreq = config.minfreq
   self.dim = config.dim
   self.window = config.window
   self.lr = config.lr
@@ -28,6 +27,8 @@ function Word2Vec:__init(config, corpus)
   self.labels[1] = 1 -- first label is always pos sample
 
   self.c = corpus
+
+  self:build_model()
 end
 
 function Word2Vec:save(path)
@@ -54,7 +55,7 @@ function Word2Vec:cuda()
 end
 
 -- Build vocab
-function Word2Vec:build_vocab(corpus)
+function Word2Vec:build_model()
   print("Building model...")
   local vocab_size = self.c.vocab_size 
   local lines = self.c.lines
