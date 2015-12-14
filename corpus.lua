@@ -60,3 +60,31 @@ function Corpus:buildIndices()
     self.word2index[word] = #self.index2word
   end
 end
+
+function Corpus:buildUnigramsTable(alpha, tableSize)
+  local vocab_size = #self.index2word
+  local total_count_pow = 0
+
+  for _, count in pairs(self.vocab) do
+    total_count_pow = total_count_pow + count^alpha
+  end   
+
+  local table = torch.IntTensor(tableSize)
+  local word_index = 1
+  local word_prob = self.vocab[self.index2word[word_index]]^alpha / total_count_pow
+
+  for idx = 1, tableSize do
+    table[idx] = word_index
+
+    if idx / tableSize > word_prob then
+      word_index = word_index + 1
+      word_prob = word_prob + self.vocab[self.index2word[word_index]]^alpha / total_count_pow
+    end
+
+    if word_index > vocab_size then
+      word_index = word_index - 1
+    end
+  end
+
+  return table
+end
