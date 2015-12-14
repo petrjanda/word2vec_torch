@@ -6,10 +6,6 @@ require("sys")
 require("nn")
 require("corpus")
 
-
-
-
-
 local Word2Vec = torch.class("Word2Vec")
 
 function Word2Vec:__init(config)
@@ -30,8 +26,6 @@ function Word2Vec:__init(config)
   self.contexts = torch.IntTensor(1 + self.neg_samples) 
   self.labels = torch.zeros(1 + self.neg_samples)
   self.labels[1] = 1 -- first label is always pos sample
-  self.index2word = {}
-  self.word2index = {}
   self.total_count = 0
 
   self.c = Corpus()
@@ -60,7 +54,7 @@ function Word2Vec:cuda()
   self.w2v:cuda()
 end
 
--- Build vocab frequency, word2index, and index2word from input file
+-- Build vocab
 function Word2Vec:build_vocab(corpus)
   print("Building vocabulary...")
   local start = sys.clock()
@@ -69,9 +63,6 @@ function Word2Vec:build_vocab(corpus)
   self.c:buildIndices()
 
   local vocab_size = self.c.vocab_size 
-
-  self.index2word = self.c.index2word
-  self.word2index = self.c.word2index
   n = self.c.lines
   self.total_count = self.c.total
 
@@ -141,7 +132,7 @@ function Word2Vec:train_stream(corpus)
 
   function process(sentense)
     for i, word in ipairs(sentence) do
-      word_idx = self.word2index[word]
+      word_idx = self.c.getIndex(word)
       if word_idx ~= nil then -- word exists in vocab
         local reduced_window = torch.random(self.window) -- pick random window size
         self.word[1] = word_idx -- update current word
@@ -151,7 +142,7 @@ function Word2Vec:train_stream(corpus)
         for j = i - reduced_window, i + reduced_window do -- loop through contexts
           local context = sentence[j]
           if context ~= nil and j ~= i then -- possible context
-            context_idx = self.word2index[context]
+            context_idx = self.c.getIndex(context)
             if context_idx ~= nil then -- valid context
               self:sample_contexts(context_idx) -- update pos/neg contexts
               self:train_pair(self.word, self.contexts) -- train word context pair

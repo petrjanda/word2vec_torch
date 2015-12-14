@@ -48,6 +48,10 @@ function Corpus:read(path)
   f:close()
 end
 
+function Corpus:getIndex(word)
+  return self.word2index[word]
+end
+
 -- Stream corpus sentenses (lines split by space)
 function Corpus:streamSentenses(path, fn)
   local f = io.open(path, "r")
