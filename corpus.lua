@@ -4,6 +4,7 @@ local function split(input, sep)
     sep = "%s"
   end
 
+
   local t = {}
   local i = 1
 
@@ -74,10 +75,11 @@ function Corpus:buildIndices()
     self.index2word[#self.index2word + 1] = word
     self.word2index[word] = #self.index2word
   end
+
+  self.vocab_size = #self.index2word
 end
 
 function Corpus:buildUnigramsTable(alpha, tableSize)
-  local vocab_size = #self.index2word
   local total_count_pow = 0
 
   for _, count in pairs(self.vocab) do
@@ -96,12 +98,12 @@ function Corpus:buildUnigramsTable(alpha, tableSize)
     if idx / tableSize > word_prob then
       word_index = word_index + 1
 
-      if(word_index <= vocab_size) then
+      if(word_index <= self.vocab_size) then
         word_prob = word_prob + self.vocab[self.index2word[word_index]] ^ alpha / total_count_pow
       end
     end
 
-    if word_index > vocab_size then
+    if word_index > self.vocab_size then
       word_index = word_index - 1
     end
   end
